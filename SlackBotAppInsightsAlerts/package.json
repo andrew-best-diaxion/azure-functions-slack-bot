@@ -1,8 +1,8 @@
 {
-  "name": "SlackBotAzureALerts",
-  "description": "A function to post Azure Alerts to Slack",
+  "name": "DiaxionSlackBotDev",
+  "description": "A function to post Azure Monitor Alerts to Slack",
   "version": "0.1.0",
-  "author": "Sven Knispel <sven.knispel@gmail.com>",
+  "author": "Andrew Best <abest@diaxion.com",
   "license": "Apache-2.0",
   "dependencies": {
     "request": "^2.74.0"
