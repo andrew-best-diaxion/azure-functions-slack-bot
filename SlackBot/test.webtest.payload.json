@@ -1,0 +1,25 @@
+{
+    "channel": "<webhook-channel>",
+
+    "username": "<bot-name>",
+    "text": "This is your last notice",
+    "icon_url": "",
+    "icon_emoji": ":lightning_cloud:",
+    "fallback": "Upgrade your client",
+    "notifications": [
+    {
+        "type": "error",
+        "title": "Error title",
+        "text": "This is an error notification"
+    },
+    {
+        "type": "warn",
+        "title": "Warn title",
+        "text": "This is a warning notification"
+    },
+    {
+        "type": "info",
+        "title": "Info title",
+        "text": "This is an info notification"
+    }]
+}

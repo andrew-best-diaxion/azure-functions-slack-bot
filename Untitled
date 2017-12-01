@@ -1,0 +1,51 @@
+{
+    "channels": "Operation",
+    "correlationId": "e560ef51-ed72-418b-a9d1-c285f162b5af",
+    "description": "Alert: General Admin Alerts called on action groups : andrewactiongroup",
+    "eventDataId": "369ae281-6252-49fc-82fc-f7b0fa8a4197",
+    "eventName": {
+        "value": "",
+        "localizedValue": ""
+    },
+    "category": {
+        "value": "Alert",
+        "localizedValue": "Alert"
+    },
+    "eventTimestamp": "2017-11-27T02:48:31.7685142Z",
+    "id": "/subscriptions/a98be5a5-256c-4966-a4ef-137ac0de0380/resourceGroups/Default-ActivityLogAlerts/providers/microsoft.insights/activityLogAlerts/General+Admin+Alerts/events/369ae281-6252-49fc-82fc-f7b0fa8a4197/ticks/636473477117685142",
+    "level": "Informational",
+    "operationId": "",
+    "operationName": {
+        "value": "Microsoft.Insights/ActivityLogAlerts/Activated/action",
+        "localizedValue": "Microsoft.Insights/ActivityLogAlerts/Activated/action"
+    },
+    "resourceGroupName": "Default-ActivityLogAlerts",
+    "resourceProviderName": {
+        "value": "microsoft.insights",
+        "localizedValue": "Microsoft Insights"
+    },
+    "resourceType": {
+        "value": "microsoft.insights/activityLogAlerts",
+        "localizedValue": "microsoft.insights/activityLogAlerts"
+    },
+    "resourceId": "/subscriptions/a98be5a5-256c-4966-a4ef-137ac0de0380/resourceGroups/Default-ActivityLogAlerts/providers/microsoft.insights/activityLogAlerts/General Admin Alerts",
+    "status": {
+        "value": "Succeeded",
+        "localizedValue": "Succeeded"
+    },
+    "subStatus": {
+        "value": "",
+        "localizedValue": ""
+    },
+    "subscriptionId": "a98be5a5-256c-4966-a4ef-137ac0de0380",
+    "properties": {
+        "subscriptionId": "a98be5a5-256c-4966-a4ef-137ac0de0380",
+        "eventDataId": "a082c455-c9a9-4cce-91da-45b23aea3aa9",
+        "resourceGroup": "RgCloudInitTest",
+        "resourceId": "/subscriptions/a98be5a5-256c-4966-a4ef-137ac0de0380/resourcegroups/RgCloudInitTest",
+        "eventTimestamp": "2017-11-27T02:48:10.4859993Z",
+        "operationName": "Microsoft.Resources/subscriptions/resourcegroups/write",
+        "status": "Succeeded"
+    },
+    "relatedEvents": []
+}
