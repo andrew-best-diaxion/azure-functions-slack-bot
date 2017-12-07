@@ -1,0 +1,23 @@
+{
+	"username": "Postman",
+	"text": "Im text from Postman",
+	"icon_url": "",
+	"icon_emoji": ":lightening_cloud:",
+	"fallback": "Upgrade your client.",
+	"notifications": [
+		{
+			"type": "error",
+			"title": "Error Title",
+			"text": "This is an error type notification"
+		},
+		{
+			"type": "warn",
+			"title": "Warning Title",
+			"text": "This is a warning type notification"
+		},
+		{
+			"type": "info",
+			"title": "Information Title",
+			"text": "This is an Information type notification"
+		}]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "azrfncn-monitor-slack",
+  "version": "0.0.1",
+  "description": "Better Slack notifications for Azure Monitor",
+  "authors": [
+    "Andrew Best <festivus@gmail.com>"
+  ],
+  "config": {
+    "progress": "true"
+  },
+  "dependencies": {
+  "request": "^2.74.0",
+  "lodash": "^4.15.0",
+  "url": "^0.11.0"
+  },
+  "keywords": [
+    "azure",
+    "slack",
+    "azurefunctions",
+    "slackbot",
+    "azuremonitor",
+    "notifications"
+  ],
+  "license": "MIT"
+}
