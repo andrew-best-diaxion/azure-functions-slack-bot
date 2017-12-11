@@ -56,7 +56,7 @@ var getColor = function (noticeType) {
 
   // See the schema for event levels
   // https://docs.microsoft.com/en-us/azure/monitoring-and-diagnostics/monitoring-activity-log-schema
-  if (noticeType === 'critical' || noticeType === 'error') {
+  if (noticeType === 'critical' || noticeType === 'error' || noticeType === 'Failed') {
     return 'danger';
   } else if (noticeType === 'warning' || noticeType === 'Warning') {
     return 'warning';
@@ -76,10 +76,18 @@ var handleOperationsActivity = function (context, req) {
     var object = activityLog.resourceId.split('/')[8];
     var status = activityLog.status;
     var timestamp = new Date(activityLog.eventTimestamp).getTime() / 1000 || 'Timestamp not found.';
-    //var message = record;
     var subject = 'Subscription Activity by ' + actor + ' from ' + source;
-    //var subject = 'Subscription Activity by ' + actor;
-    var color = getColor(activityLog.level);
+
+    // There are a few status/result fields in the JSON we received. They are:
+    // - activityLog.status (values are: Started, In Progress, Succeeded, Failed, Active, Resolved)
+    // - activityLog.level (values: “Critical”, “Error”, “Warning”, “Informational” and “Verbose”)
+    // See https://docs.microsoft.com/en-us/azure/monitoring-and-diagnostics/monitoring-activity-log-schema
+    if (activityLog.status === 'Failed')
+    { // we want to force the message colour to be red if a task failed.
+      var color = getColor('Failed');
+    } else {
+      var color = getColor(activityLog.level);
+    };
 
     // Add all of the values from the event message to the Slack message description
     // var description = '';
@@ -96,44 +104,6 @@ var handleOperationsActivity = function (context, req) {
         fields: [
           { title: 'Action', value: action, short: true, },
           { title: 'Status', value: status, short: true, },
-          { title: 'Type', value: type, short: true, },
-          { title: 'Object', value: object, short: false, },
-        ],
-        ts: timestamp,
-      },
-      ],
-    };
-
-    return _.merge(slackMessage, baseSlackMessage);
-  };
-
-var handleResourcesActivity = function (context, req) {
-    var record = req.body || 'No data found in body.';
-    var source = record.claims.ipaddr;
-    var actor = record.caller;
-    var action = record.operationName.localizedValuevalue;
-    var type = record.resourceType.value.split('/')[2];
-    var object = record.resourceId.split('/')[3];
-    var timestamp = new Date(record.eventTimestamp).getTime() / 1000
-                    || 'Timestamp not found.';
-    //var message = record;
-    var subject = 'Subscription Activity by ' + actor + ' from ' + source;
-    var color = getColor(record.level);
-
-    // Add all of the values from the event message to the Slack message description
-    // var description = '';
-    // for (key in message) {
-    //   var renderedMessage = typeof message[key] === 'object' ?
-    //     JSON.stringify(message[key]) : message[key];
-    //   description = description + '\n' + key + ': ' + renderedMessage;
-    // }
-
-    var slackMessage = {
-      text: '*' + subject + '*',
-      attachments: [{
-        color: color,
-        fields: [
-          { title: 'Action', value: action, short: true, },
           { title: 'Type', value: type, short: true, },
           { title: 'Object', value: object, short: false, },
         ],
@@ -202,35 +172,10 @@ var processEvent = function (context, req) {
   var eventSnsSubject = req.body.Subject || 'no subject';
   var eventSnsMessage = req.body.Message || 'no message';
 
-  // if(eventSubscriptionArn.indexOf(config.services.elasticbeanstalk.match_text) > -1 || eventSnsSubject.indexOf(config.services.elasticbeanstalk.match_text) > -1 || eventSnsMessage.indexOf(config.services.elasticbeanstalk.match_text) > -1){
-  //   console.log("processing elasticbeanstalk notification");
-  //   slackMessage = handleElasticBeanstalk(event,context)
-  // }
-  // else if(eventSubscriptionArn.indexOf(config.services.cloudwatch.match_text) > -1 || eventSnsSubject.indexOf(config.services.cloudwatch.match_text) > -1 || eventSnsMessage.indexOf(config.services.cloudwatch.match_text) > -1){
-  //   console.log("processing cloudwatch notification");
-  //   slackMessage = handleCloudWatch(event,context);
-  // }
-  // else if(eventSubscriptionArn.indexOf(config.services.codedeploy.match_text) > -1 || eventSnsSubject.indexOf(config.services.codedeploy.match_text) > -1 || eventSnsMessage.indexOf(config.services.codedeploy.match_text) > -1){
-  //   console.log("processing codedeploy notification");
-  //   slackMessage = handleCodeDeploy(event,context);
-  // }
-  // else if(eventSubscriptionArn.indexOf(config.services.elasticache.match_text) > -1 || eventSnsSubject.indexOf(config.services.elasticache.match_text) > -1 || eventSnsMessage.indexOf(config.services.elasticache.match_text) > -1){
-  //   console.log("processing elasticache notification");
-  //   slackMessage = handleElasticache(event,context);
-  // }
-  // else if(eventSubscriptionArn.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsSubject.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsMessage.indexOf(config.services.autoscaling.match_text) > -1){
-  //   console.log("processing autoscaling notification");
-  //   slackMessage = handleAutoScaling(event, context);
-  // }
-  //if (false)
   if (req.body.data.context.activityLog.channels.indexOf(config.services.operationsactivity.match_text) > -1)
   {
-    // handle an Insight Activity event.
+    // handle an Operations event.
     slackMessage = handleOperationsActivity(context, req);
-  } else if (req.body.resourceProviderName.value.indexOf(config.services.resourcesactivity.match_text) > -1)
-  {
-    // handle a 'Microsoft.Resources' event
-    slackMessage = handleResourcesActivity(context, req);
   } else
   {
     // handle an undetected event.
@@ -239,15 +184,12 @@ var processEvent = function (context, req) {
 
   postMessage(slackMessage, function (response) {
     if (response.statusCode < 400) {
-      //console.info('message posted successfully');
       context.done();
     } else if (response.statusCode < 500) {
-      //console.error('error posting message to slack API: ' + response.statusCode + ' - ' + response.statusMessage);
-      // Don't retry because the error is due to a problem with the request
       context.succeed();
     } else {
-      // Let Lambda retry
-      context.fail('server error when processing message: ' + response.statusCode + ' - ' + response.statusMessage);
+      context.fail('server error when processing message: ' +
+                    response.statusCode + ' - ' + response.statusMessage);
     }
   });
 };
