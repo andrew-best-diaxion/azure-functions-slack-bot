@@ -52,43 +52,90 @@ var postMessage = function (message, callback) {
   postReq.end();
 };
 
-var handleInsightActivity = function (context, req) {
-    var record = req.body || 'Body not found.';
-    var subject = req.body.Subject || 'Subject not found';
-    var timestamp = new Date(req.body.Timestamp).getTime() / 1000 || 'Timestamp not found.';
-    var message = req.body;
-    var color = 'warning';
+var getColor = function (noticeType) {
 
-    if (message.NewStateValue === 'ALARM') {
-      color = 'danger';
-    } else if (message.NewStateValue === 'OK') {
-      color = 'good';
-    }
+  // See the schema for event levels
+  // https://docs.microsoft.com/en-us/azure/monitoring-and-diagnostics/monitoring-activity-log-schema
+  if (noticeType === 'critical' || noticeType === 'error') {
+    return 'danger';
+  } else if (noticeType === 'warning' || noticeType === 'Warning') {
+    return 'warning';
+  } else {
+    return 'good';
+  };
+};
+
+var handleOperationsActivity = function (context, req) {
+    var record = req.body || 'No data found in body.';
+    var activityLog = req.body.data.context.activityLog || 'activityLog not found in payload.';
+    var claims = JSON.parse(activityLog.claims);
+    var source = claims.ipaddr;
+    var actor = activityLog.caller;
+    var action = activityLog.operationName.split('/')[2];
+    var type = activityLog.resourceType.split('/')[1];
+    var object = activityLog.resourceId.split('/')[8];
+    var status = activityLog.status;
+    var timestamp = new Date(activityLog.eventTimestamp).getTime() / 1000 || 'Timestamp not found.';
+    //var message = record;
+    var subject = 'Subscription Activity by ' + actor + ' from ' + source;
+    //var subject = 'Subscription Activity by ' + actor;
+    var color = getColor(activityLog.level);
 
     // Add all of the values from the event message to the Slack message description
-    var description = '';
-    for (key in message) {
-      var renderedMessage = typeof message[key] === 'object' ?
-        JSON.stringify(message[key]) :
-        message[key];
-
-      description = description + '\n' + key + ': ' + renderedMessage;
-    }
+    // var description = '';
+    // for (key in message) {
+    //   var renderedMessage = typeof message[key] === 'object' ?
+    //     JSON.stringify(message[key]) : message[key];
+    //   description = description + '\n' + key + ': ' + renderedMessage;
+    // }
 
     var slackMessage = {
       text: '*' + subject + '*',
       attachments: [{
         color: color,
-        fields: [{
-            title: 'Message',
-            value: req.body.Name,
-            short: false,
-          },
-          {
-            title: 'Description',
-            value: description,
-            short: false,
-          },
+        fields: [
+          { title: 'Action', value: action, short: true, },
+          { title: 'Status', value: status, short: true, },
+          { title: 'Type', value: type, short: true, },
+          { title: 'Object', value: object, short: false, },
+        ],
+        ts: timestamp,
+      },
+      ],
+    };
+
+    return _.merge(slackMessage, baseSlackMessage);
+  };
+
+var handleResourcesActivity = function (context, req) {
+    var record = req.body || 'No data found in body.';
+    var source = record.claims.ipaddr;
+    var actor = record.caller;
+    var action = record.operationName.localizedValuevalue;
+    var type = record.resourceType.value.split('/')[2];
+    var object = record.resourceId.split('/')[3];
+    var timestamp = new Date(record.eventTimestamp).getTime() / 1000
+                    || 'Timestamp not found.';
+    //var message = record;
+    var subject = 'Subscription Activity by ' + actor + ' from ' + source;
+    var color = getColor(record.level);
+
+    // Add all of the values from the event message to the Slack message description
+    // var description = '';
+    // for (key in message) {
+    //   var renderedMessage = typeof message[key] === 'object' ?
+    //     JSON.stringify(message[key]) : message[key];
+    //   description = description + '\n' + key + ': ' + renderedMessage;
+    // }
+
+    var slackMessage = {
+      text: '*' + subject + '*',
+      attachments: [{
+        color: color,
+        fields: [
+          { title: 'Action', value: action, short: true, },
+          { title: 'Type', value: type, short: true, },
+          { title: 'Object', value: object, short: false, },
         ],
         ts: timestamp,
       },
@@ -100,7 +147,7 @@ var handleInsightActivity = function (context, req) {
 
 var handleCatchAll = function (context, req) {
   var record = req.body || 'Body not found.';
-  var subject = req.body.Subject || 'Subject not found';
+  var subject = req.body.Subject || 'Catchall Notification Triggered.';
   var timestamp = new Date(req.body.Timestamp).getTime() / 1000 || 'Timestamp not found.';
   var message = req.body;
   var color = 'warning';
@@ -127,7 +174,7 @@ var handleCatchAll = function (context, req) {
       color: color,
       fields: [{
           title: 'Message',
-          value: req.body.Name,
+          value: 'Unknown message received.',
           short: false,
         },
         {
@@ -147,6 +194,7 @@ var handleCatchAll = function (context, req) {
 var processEvent = function (context, req) {
   // This is where we determine what sort of message we got from Azure.
   var slackMessage = null;
+
   // var eventSubscriptionArn = event.Records[0].EventSubscriptionArn;
   // var eventSnsSubject = event.Records[0].Sns.Subject || 'no subject';
   // var eventSnsMessage = event.Records[0].Sns.Message;
@@ -175,12 +223,17 @@ var processEvent = function (context, req) {
   //   slackMessage = handleAutoScaling(event, context);
   // }
   //if (false)
-  if (req.body.schemaId.indexOf(config.services.insightactivity.match_text) > -1)
+  if (req.body.data.context.activityLog.channels.indexOf(config.services.operationsactivity.match_text) > -1)
   {
-    //console.log("processing elasticbeanstalk notification");
-    slackMessage = handleInsightActivity(context, req);
+    // handle an Insight Activity event.
+    slackMessage = handleOperationsActivity(context, req);
+  } else if (req.body.resourceProviderName.value.indexOf(config.services.resourcesactivity.match_text) > -1)
+  {
+    // handle a 'Microsoft.Resources' event
+    slackMessage = handleResourcesActivity(context, req);
   } else
   {
+    // handle an undetected event.
     slackMessage = handleCatchAll(context, req);
   }
 
